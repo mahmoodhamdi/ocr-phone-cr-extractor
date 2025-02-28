@@ -1,0 +1,30 @@
+name: ocr
+description: "A new Flutter project."
+
+publish_to: "none"
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.7.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: 
+  google_mlkit_text_recognition: 
+  image: 
+  image_picker:
+  path_provider: 
+  share_plus: 
+  syncfusion_flutter_xlsio:
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: 
+
+flutter:
+  uses-material-design: true
