@@ -128,7 +128,7 @@ class _OCRScreenState extends State<OCRScreen> {
 
             selectedAssets: [], // Optional: specify pre-selected assets
             androidOptions: AndroidOptions(
-              maxImages: 500,
+              
               actionBarTitle:
                   "Select Images", // Optional: change the action bar title
               allViewTitle:
