@@ -19,7 +19,8 @@ dependencies:
   path_provider: 
   share_plus: 
   syncfusion_flutter_xlsio:
-
+  permission_handler:
+  multi_image_picker_plus: ^0.0.7
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -6,11 +6,14 @@ import 'package:flutter/material.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
+import 'package:multi_image_picker_plus/multi_image_picker_plus.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:syncfusion_flutter_xlsio/xlsio.dart' as xls;
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const MyApp());
 }
 
@@ -95,6 +98,78 @@ class _OCRScreenState extends State<OCRScreen> {
     setState(() {
       isProcessing = false;
     });
+  }
+
+  bool isPickerActive = false; // Track if the picker is active
+
+  /// 📌 اختيار صور متعددة من المعرض باستخدام multi_image_picker_plus مع التعامل مع الأذونات
+  Future<void> _pickMultipleImagess() async {
+    if (isPickerActive) {
+      print("Image picker is already active, please wait...");
+      return; // Prevent triggering the picker while it's already active
+    }
+
+    setState(() {
+      isProcessing = true;
+      isPickerActive = true; // Mark picker as active
+    });
+
+    // First, request storage permission
+    var storagePermission = await Permission.storage.request();
+
+    // If storage permission is granted, proceed to camera permission (if needed)
+    if (storagePermission.isGranted) {
+      var cameraPermission = await Permission.camera.request();
+
+      if (cameraPermission.isGranted) {
+        try {
+          // Pick multiple images from the gallery
+          final List<Asset> pickedAssets = await MultiImagePicker.pickImages(
+
+            selectedAssets: [], // Optional: specify pre-selected assets
+            androidOptions: AndroidOptions(
+              maxImages: 500,
+              actionBarTitle:
+                  "Select Images", // Optional: change the action bar title
+              allViewTitle:
+                  "All Photos", // Optional: change the all photos view title
+            ),
+          );
+
+          if (pickedAssets.isNotEmpty) {
+            for (var asset in pickedAssets) {
+              // Convert the asset to a File
+              final file = await _getFileFromAsset(asset);
+              await _processImage(file);
+            }
+          }
+        } catch (e) {
+          print("Error picking images: $e");
+        }
+      } else {
+        print(
+          "Camera permission is denied. Please grant permission to continue.",
+        );
+      }
+    } else {
+      print(
+        "Storage permission is denied. Please grant permission to continue.",
+      );
+    }
+
+    setState(() {
+      isProcessing = false;
+      isPickerActive = false; // Mark picker as inactive once it's finished
+    });
+  }
+
+  /// Function to convert Asset to File
+  Future<File> _getFileFromAsset(Asset asset) async {
+    final byteData = await asset.getByteData();
+    final buffer = byteData.buffer.asUint8List();
+    final filePath = '${(await getTemporaryDirectory()).path}/${asset.name}';
+    final file = File(filePath)..writeAsBytesSync(buffer);
+    return file;
   }
 
   /// 📌 معالجة صورة واستخراج البيانات منها
@@ -189,7 +264,8 @@ class _OCRScreenState extends State<OCRScreen> {
       fullText = fullText.replaceAll(RegExp(r'[^0-9]'), '');
 
       /// 🏷️ البحث عن رقم السجل التجاري بصيغة (45XXXXXXXXXX)
-      RegExp crRegExp = RegExp(r'45\d{10}');
+      RegExp crRegExp = RegExp(r'4[2-8]\d{10}');
+
       RegExpMatch? crMatch = crRegExp.firstMatch(fullText);
 
       return crMatch?.group(0) ?? "غير موجود";
@@ -299,25 +375,22 @@ class _OCRScreenState extends State<OCRScreen> {
         body: Column(
           children: [
             // أزرار الإجراءات
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  ElevatedButton.icon(
-                    onPressed: isProcessing ? null : _pickSingleImage,
-                    icon: const Icon(Icons.image),
-                    label: const Text("اختيار صورة واحدة"),
-                  ),
-                  ElevatedButton.icon(
-                    onPressed: isProcessing ? null : _pickMultipleImages,
-                    icon: const Icon(Icons.photo_library),
-                    label: const Text("اختيار عدة صور"),
-                  ),
-                ],
-              ),
+            ElevatedButton.icon(
+              onPressed: isProcessing ? null : _pickSingleImage,
+              icon: const Icon(Icons.image),
+              label: const Text("اختيار صورة واحدة"),
             ),
 
+            ElevatedButton.icon(
+              onPressed: isProcessing ? null : _pickMultipleImagess,
+              icon: const Icon(Icons.photo_library),
+              label: const Text("اختيار عدد كبير من الصور"),
+            ),
+            ElevatedButton.icon(
+              onPressed: isProcessing ? null : _pickMultipleImages,
+              icon: const Icon(Icons.photo_library),
+              label: const Text("اختيار عدة صور بحد أقصى 100 صوره"),
+            ),
             // مؤشر التحميل
             if (isProcessing)
               const Padding(
