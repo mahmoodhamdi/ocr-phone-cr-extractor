@@ -1,4 +1,4 @@
-package com.example.ocr
+package com.example.saudinumberextractor
 
 import io.flutter.embedding.android.FlutterActivity
 
